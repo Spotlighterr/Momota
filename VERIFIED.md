@@ -66,3 +66,15 @@ GPU policy parsing and PCI matching have been extracted to C11 and their boundar
 tests pass. The new adapter build succeeds; hardware regression must be rerun
 after restart with matching driver versions. System-wide NVIDIA-primary rendering,
 Safari routing, login-flow stability, and long-term validation remain unfinished.
+
+### Recurring original VS Code stalls
+
+GPU diagnostic dumps at 01:46, 01:52, and 01:55 came from `CrGpuMain`. A later
+`GpuWatchdog` dump and an AMD GPU reset at 01:57 identify continued GPU instability
+in the original VS Code session. The later reset includes `main0` and unpack shaders,
+so disabling Graphite alone must not be presented as a complete AMD driver fix.
+At inspection, AMD had roughly 500 MB of free VRAM and system swap usage was zero.
+
+The health collector now includes Chromium Crashpad GPU diagnostics in addition
+to macOS reports. A diagnostic dump is reported as such, not automatically labeled
+as a fatal exception. Raw minidumps remain local and are not included in Git.
