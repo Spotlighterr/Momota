@@ -13,6 +13,8 @@ Both GPUs report `lowPower=false`, so that property cannot distinguish them.
 - `RTX_REGISTRY_ID` optionally selects a current-boot registry ID.
 - An unavailable or ambiguous target preserves the original selection.
 - Selection applies on battery and AC power.
+- Invalid, zero, negative, empty, or overflowing registry IDs preserve normal selection.
+- Observer enumeration and callbacks expose the same selected device.
 
 Variables are scoped to the launched app and its children. Closing it stops using
 the shim. No background service, global injection, or startup item is installed.
@@ -25,6 +27,12 @@ Use the `.command` launchers rather than opening the copied app bundles directly
   Its GPU button returns to the WebGL check.
 - VS Code uses the project's `code-profile` and `code-extensions` directories.
   Original settings and extensions are not imported.
+- `Launch-Code-Compatible.command` keeps the original signed VS Code and profile,
+  but disables Skia Graphite. The original app must be closed before launching it.
+
+The default browser and Code RTX use Ganesh over ANGLE Metal. The test browser also
+accepts `MOMOTA_BACKEND=graphite` for controlled comparison. This is a mitigation
+for the observed Graphite/Dawn hangs, not proof that every AMD shader issue is fixed.
 
 ## Security and maintenance
 
@@ -51,3 +59,28 @@ inspection. Restart normally afterward to close the debugging endpoint.
 
 Small passing tests do not establish sustained performance or compatibility with
 every application.
+
+## Stress and crash checks
+
+Set `MOMOTA_STRESS_MS=60000 RTX_SMOKE_EXIT=1` when launching the browser for a
+60-second resize and pixel-readback check. `MOMOTA_PROFILE_DIR` and `RTX_REPORT_DIR`
+can select isolated profile and report paths. The test exits nonzero on failure,
+and GPU/context failures are shown in the UI instead of an unconditional RTX badge.
+
+`python3 tools/gpu-health.py --output reports/health/before.json` records a baseline.
+After testing, use `--compare reports/health/before.json --output reports/health/after.json`
+to identify new local GPU reset or relevant crash reports. This tool does not upload
+logs or read authentication tokens.
+
+The native probe has a ten-second command timeout. `MOMOTA_IOSURFACE=1` enables the
+shared-texture path; `MOMOTA_UNKNOWN_USAGE=1` tests implicit texture usage.
+
+## Driver updates
+
+The launchers and native verification compare installed and running NullMoth
+versions. A pending update blocks GPU tests until a restart prevents mixing the
+new user-space libraries with the previous running kernel components.
+
+After restarting, run `./verify-postboot.sh`. It rebuilds the native adapter, checks
+device selection and IOSurface paths, runs a 60-second browser stress test, and
+compares system crash reports. It does not restart the machine itself.

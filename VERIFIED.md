@@ -39,3 +39,30 @@ and `reports/native`. These generated files are excluded from Git.
 
 Run the `.command` launchers to use the trial apps. The VS Code copy has its own
 settings and extensions directory; it does not import the original profile.
+
+## November 4 stability follow-up
+
+- The current AMD allocation reports 1 GB; earlier captures reported 512 MB.
+- Original VS Code generated AMD reset reports containing Dawn/Graphite shaders.
+- Restarting only its GPU child restored interaction, confirmed by the user.
+- Historical AMD resets also identify `mediaanalysisd` and `VTMTSComputeFunction`.
+- A new `mediaanalysisd` crash occurred inside NVK descriptor updates.
+- Registry-filter failures, observer enumeration, compute, and pixel checks passed
+  all nine native scenarios before the C extraction.
+- IOSurface textures passed 4096-pixel checks with explicit and implicit usage.
+- The Ganesh NVIDIA browser passed 7394 frames and 247 canvas resizes in 60 seconds,
+  with no incorrect sampled pixels or context loss. No new relevant system crash
+  or GPU reset reports were observed during the comparison window.
+- Code RTX selected NVIDIA with GaneshGL, correct pixel readback, and GPU sandboxing.
+
+These frame counts are diagnostic loop throughput, not display FPS or a benchmark.
+
+NullMoth 2.6.6 has been installed using its official installer, with backup and
+rollback prepared. Running kernel extensions still report 2.6.5 until restart.
+Post-update hardware validation is pending. Momota now refuses GPU launch/tests
+when installed and loaded driver versions differ.
+
+GPU policy parsing and PCI matching have been extracted to C11 and their boundary
+tests pass. The new adapter build succeeds; hardware regression must be rerun
+after restart with matching driver versions. System-wide NVIDIA-primary rendering,
+Safari routing, login-flow stability, and long-term validation remain unfinished.

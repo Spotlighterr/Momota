@@ -2,6 +2,8 @@
 
 Experimental NVIDIA render offload for macOS Hackintosh.
 Selected apps render on NVIDIA while AMD drives the laptop display.
+The long-term objective is NVIDIA-primary rendering with AMD used for display
+output. System-wide routing is not implemented yet.
 
 ## Current status
 
@@ -31,8 +33,17 @@ cd Momota
 ```
 
 Use `./Launch-Code-RTX.command` for VS Code. Both launchers use separate profiles.
+The default renderer uses Ganesh over ANGLE Metal to avoid the Graphite path involved
+in observed AMD GPU resets. `Launch-Code-Compatible.command` starts the original,
+signed VS Code with Graphite disabled; close its existing instance first.
 The test app copies are signed ad hoc to load the shim. Read [usage and limits](docs/usage.md)
 before using them beyond testing.
+
+For a local GPU health report, run `python3 tools/gpu-health.py`.
+After a driver update and restart, run `./verify-postboot.sh`.
+
+The GPU selection policy is C11; a thin Objective-C adapter calls Metal and IOKit.
+JavaScript is used for the diagnostic browser, not the native selection policy.
 
 ## Credits
 

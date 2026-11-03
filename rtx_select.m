@@ -6,10 +6,10 @@
 #import <CoreGraphics/CoreGraphics.h>
 #import <IOKit/IOKitLib.h>
 #include <dispatch/dispatch.h>
-#include <dlfcn.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "native/gpu_policy.h"
 
 #define INTERPOSE(replacement, original) \
   __attribute__((used)) static struct { const void *newfn; const void *oldfn; } \
@@ -42,7 +42,12 @@ static id<MTLDevice> selectedDevice(void) {
         // on this dyld version and recursively enter selectionOnce.
         NSArray<id<MTLDevice>> *devices = MTLCopyAllDevices();
         const char *requested = getenv("RTX_REGISTRY_ID");
-        uint64_t exact = requested ? strtoull(requested, NULL, 0) : 0;
+        struct momota_registry_filter filter;
+        if (!momota_parse_registry_filter(requested, &filter)) {
+            fprintf(stderr, "[rtx-select] %s: invalid RTX_REGISTRY_ID; normal selection\n", getprogname());
+            [devices release];
+            return;
+        }
         NSUInteger matches = 0;
         for (id<MTLDevice> device in devices) {
             io_registry_entry_t entry = IOServiceGetMatchingService(kIOMainPortDefault,
@@ -56,9 +61,10 @@ static id<MTLDevice> selectedDevice(void) {
                 entry = kr == KERN_SUCCESS ? parent : IO_OBJECT_NULL;
             }
             if (!entry) continue;
-            BOOL match = pciValue(entry, CFSTR("vendor-id")) == 0x10de &&
-                         pciValue(entry, CFSTR("device-id")) == 0x25a2 &&
-                         (!exact || exact == device.registryID);
+            const struct momota_gpu_identity identity = {
+                pciValue(entry, CFSTR("vendor-id")), pciValue(entry, CFSTR("device-id")), device.registryID
+            };
+            BOOL match = momota_gpu_matches(&identity, &filter);
             IOObjectRelease(entry);
             if (match) {
                 matches++;
@@ -91,8 +97,15 @@ static NSArray<id<MTLDevice>> *rtxAllDevices(void) {
 
 static NSArray<id<MTLDevice>> *rtxDevicesWithObserver(id<NSObject> *observer,
         MTLDeviceNotificationHandler handler) {
-    NSArray<id<MTLDevice>> *all = MTLCopyAllDevicesWithObserver(observer, handler);
     id<MTLDevice> target = selectedDevice();
+    MTLDeviceNotificationHandler filtered = handler;
+    if (target && handler) {
+        const uint64_t registry = target.registryID;
+        filtered = ^(id<MTLDevice> device, MTLDeviceNotificationName notification) {
+            if (device.registryID == registry) handler(device, notification);
+        };
+    }
+    NSArray<id<MTLDevice>> *all = MTLCopyAllDevicesWithObserver(observer, filtered);
     if (target) { [all release]; return [[NSArray alloc] initWithObjects:target, nil]; }
     return all;
 }

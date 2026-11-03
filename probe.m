@@ -2,6 +2,22 @@
 #import <Metal/Metal.h>
 #import <AppKit/AppKit.h>
 #import <QuartzCore/CAMetalLayer.h>
+#import <IOSurface/IOSurface.h>
+
+static BOOL submitAndWait(id<MTLCommandBuffer> command) {
+    dispatch_semaphore_t completed = dispatch_semaphore_create(0);
+    [command addCompletedHandler:^(id<MTLCommandBuffer> result) {
+        (void)result;
+        dispatch_semaphore_signal(completed);
+    }];
+    [command commit];
+    if (dispatch_semaphore_wait(completed, dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC))) {
+        fprintf(stderr, "GPU command timed out after 10 seconds\n");
+        return NO;
+    }
+    dispatch_release(completed);
+    return command.status == MTLCommandBufferStatusCompleted;
+}
 
 int main(void) { @autoreleasepool {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
@@ -9,6 +25,20 @@ int main(void) { @autoreleasepool {
     printf("default=%s registry=%llu\n", device.name.UTF8String, (unsigned long long)device.registryID);
     NSArray<id<MTLDevice>> *all = MTLCopyAllDevices();
     for (id<MTLDevice> item in all) printf("enumerated=%s\n", item.name.UTF8String);
+    id<NSObject> observer = nil;
+    NSArray<id<MTLDevice>> *observed = MTLCopyAllDevicesWithObserver(&observer,
+        ^(id<MTLDevice> changed, MTLDeviceNotificationName notification) {
+            (void)changed; (void)notification;
+        });
+    NSMutableSet *ids = [NSMutableSet set], *observedIds = [NSMutableSet set];
+    for (id<MTLDevice> item in all) [ids addObject:@(item.registryID)];
+    for (id<MTLDevice> item in observed) [observedIds addObject:@(item.registryID)];
+    if (![ids isEqualToSet:observedIds] || !observer) {
+        fprintf(stderr, "Observer enumeration does not match device enumeration\n"); return 9;
+    }
+    MTLRemoveDeviceObserver(observer);
+    [observed release];
+    puts("observer-enumeration=PASS");
     NSError *error = nil;
     NSString *source = @"#include <metal_stdlib>\nusing namespace metal;\n"
         "kernel void test(device uint *out [[buffer(0)]],uint i [[thread_position_in_grid]]){out[i]=i*3+7;}\n"
@@ -27,8 +57,8 @@ int main(void) { @autoreleasepool {
     [encoder setComputePipelineState:compute];
     [encoder setBuffer:output offset:0 atIndex:0];
     [encoder dispatchThreadgroups:MTLSizeMake(4,1,1) threadsPerThreadgroup:MTLSizeMake(64,1,1)];
-    [encoder endEncoding]; [command commit]; [command waitUntilCompleted];
-    if (command.status != MTLCommandBufferStatusCompleted) {
+    [encoder endEncoding];
+    if (!submitAndWait(command)) {
         fprintf(stderr, "compute failed: %s\n", command.error.description.UTF8String); return 4;
     }
     uint32_t *values = output.contents;
@@ -45,7 +75,19 @@ int main(void) { @autoreleasepool {
         width:64 height:64 mipmapped:NO];
     td.usage = MTLTextureUsageRenderTarget;
     td.storageMode = MTLStorageModePrivate;
-    id<MTLTexture> texture = [device newTextureWithDescriptor:td];
+    IOSurfaceRef surface = NULL;
+    id<MTLTexture> texture = nil;
+    if (getenv("MOMOTA_IOSURFACE")) {
+        surface = IOSurfaceCreate((CFDictionaryRef)@{
+            (id)kIOSurfaceWidth:@64, (id)kIOSurfaceHeight:@64,
+            (id)kIOSurfaceBytesPerElement:@4, (id)kIOSurfaceBytesPerRow:@256,
+            (id)kIOSurfaceAllocSize:@16384, (id)kIOSurfacePixelFormat:@(0x42475241)
+        });
+        td.storageMode = MTLStorageModeShared;
+        if (getenv("MOMOTA_UNKNOWN_USAGE")) td.usage = MTLTextureUsageUnknown;
+        texture = [device newTextureWithDescriptor:td iosurface:surface plane:0];
+        printf("texture=IOSurface usage=%lu\n", (unsigned long)td.usage);
+    } else texture = [device newTextureWithDescriptor:td];
     if (!render || !texture) { fprintf(stderr,"render setup: %s\n",error.description.UTF8String); return 6; }
     id<MTLBuffer> readback = [device newBufferWithLength:64*64*4 options:MTLResourceStorageModeShared];
     command = [queue commandBuffer];
@@ -61,8 +103,8 @@ int main(void) { @autoreleasepool {
     [blit copyFromTexture:texture sourceSlice:0 sourceLevel:0 sourceOrigin:MTLOriginMake(0,0,0)
         sourceSize:MTLSizeMake(64,64,1) toBuffer:readback destinationOffset:0
         destinationBytesPerRow:256 destinationBytesPerImage:16384];
-    [blit endEncoding]; [command commit]; [command waitUntilCompleted];
-    if (command.status != MTLCommandBufferStatusCompleted) { fprintf(stderr,"render failed\n"); return 7; }
+    [blit endEncoding];
+    if (!submitAndWait(command)) { fprintf(stderr,"render failed\n"); return 7; }
     uint8_t *pixels = readback.contents;
     for (NSUInteger i=0;i<4096;i++) {
         if (abs((int)pixels[i*4]-64)>1 || abs((int)pixels[i*4+1]-191)>1 ||
@@ -72,6 +114,8 @@ int main(void) { @autoreleasepool {
         }
     }
     puts("render-readback=PASS 4096/4096");
+    [texture release];
+    if (surface) CFRelease(surface);
     [all release]; [device release];
     return 0;
 } }

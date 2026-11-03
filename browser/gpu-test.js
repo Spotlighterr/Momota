@@ -18,3 +18,21 @@ if(gl){
   window.gpuResult={renderer,pixel:Array.from(pixel),pixelCorrect:correct,error:gl.getError(),ok:correct&&/NVIDIA/i.test(renderer)};
 }
 document.getElementById('result').textContent=JSON.stringify(window.gpuResult,null,2);
+canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();window.gpuResult.ok=false;window.gpuResult.contextLost=true;});
+window.runGpuStress=async function(duration){
+  const start=performance.now();let frames=0,errors=0,resizes=0;
+  if(!gl||!window.gpuResult.ok)return {ok:false,error:'NVIDIA WebGL was not verified'};
+  while(performance.now()-start<duration){
+    if(frames%30===0){canvas.width=frames%60===0?1280:640;canvas.height=frames%60===0?720:320;resizes++;}
+    gl.viewport(0,0,canvas.width,canvas.height);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    const pixel=new Uint8Array(4);gl.readPixels(Math.floor(canvas.width/2),Math.floor(canvas.height/2),1,1,gl.RGBA,gl.UNSIGNED_BYTE,pixel);
+    if(gl.getError()!==gl.NO_ERROR||Math.abs(pixel[0]-128)>3||Math.abs(pixel[1]-128)>3||Math.abs(pixel[2]-64)>2||pixel[3]!==255||gl.isContextLost()){errors++;break;}
+    frames++;
+    await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  const elapsed=performance.now()-start;
+  const result={ok:errors===0&&frames>0&&window.gpuResult.ok,frames,resizes,errors,elapsedMs:Math.round(elapsed),framesPerSecond:Math.round(frames*1000/elapsed)};
+  document.getElementById('result').textContent=JSON.stringify({gpu:window.gpuResult,stress:result},null,2);
+  return result;
+};
