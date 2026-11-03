@@ -22,6 +22,7 @@ import json
 health=json.load(open('reports/postboot/after.json'))
 browser=json.load(open('reports/postboot/browser/browser-gpu.json'))
 assert not health['newReports'], 'New GPU/crash reports appeared; inspect reports/postboot/after.json'
+assert not health['recoveryCountIncreases'], 'GPU recovery counter increased; inspect reports/postboot/after.json'
 assert browser['renderer']['ok'] and browser['stress']['ok']
 print('Post-boot GPU checks: PASS; no new GPU/crash reports observed during this run')
 PY

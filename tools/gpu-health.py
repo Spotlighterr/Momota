@@ -106,9 +106,25 @@ def main():
         known = {item['name'] for item in previous['reports']}
         cutoff = datetime.datetime.fromisoformat(previous['capturedAt']).timestamp()
         result['newReports'] = [item for item in result['reports'] if item['name'] not in known and item['modified'] >= cutoff]
+        # Reset counters can change before macOS publishes a diagnostic report.
+        def recovery_counts(snapshot):
+            counts = {}
+            for device in snapshot.get('accelerators', []):
+                value = device.get('stats', {}).get('recoveryCount')
+                if isinstance(value, int):
+                    name = device['name']
+                    counts[name] = max(counts.get(name, 0), value)
+            return counts
+        before = recovery_counts(previous)
+        after = recovery_counts(result)
+        result['recoveryCountIncreases'] = [
+            {'name': name, 'before': before[name], 'after': value}
+            for name, value in after.items() if name in before and value > before[name]
+        ]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n')
-    print(json.dumps({'accelerators': result['accelerators'], 'newReports': result.get('newReports', []), 'output': str(args.output)}, indent=2))
+    print(json.dumps({'accelerators': result['accelerators'], 'newReports': result.get('newReports', []),
+        'recoveryCountIncreases': result.get('recoveryCountIncreases', []), 'output': str(args.output)}, indent=2))
 
 
 if __name__ == '__main__':

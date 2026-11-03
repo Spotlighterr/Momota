@@ -73,6 +73,10 @@ and record document visibility so window scheduling does not silently limit the
 timer-driven loop. The resulting 60-second run completed 7425 frames and 248
 resizes with no pixel errors or context loss (124 iterations/second).
 This is diagnostic throughput, not display FPS or proof of general performance.
+The final session snapshot showed the AMD recovery counter increase from 0 to 1,
+even though no new diagnostic report had appeared. Overall GPU stability therefore
+remains unresolved. Health comparisons and the post-boot gate now also check
+counter increases instead of relying only on diagnostic files.
 System-wide NVIDIA-primary rendering,
 Safari routing, login-flow stability, and long-term validation remain unfinished.
 
