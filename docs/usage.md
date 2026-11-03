@@ -54,8 +54,16 @@ rendered pixels. Browser reports and a captured frame are under `reports/browser
 
 For a controlled VS Code run, launch with
 `--remote-debugging-port=9339 --disable-extensions --new-window`, then run
-`inspect-code.mjs` with Node.js 24. `RTX_CLOSE_TEST=1` closes that test instance after
+`./run-tool.sh inspect-code` with Node.js 24. `RTX_CLOSE_TEST=1` closes that test instance after
 inspection. Restart normally afterward to close the debugging endpoint.
+
+The browser, preload, renderer diagnostics, and Code inspector are written in
+strict TypeScript. `./build-typescript.sh` compiles them into `build/js`; only
+generated JavaScript is packaged into Electron. The build uses the pinned
+`package-lock.json` and skips Electron's binary download because the app uses
+the locally installed VS Code runtime. `./run-tool.sh` compiles a tool when its
+output is missing or stale. The Metal selection core remains C11 with a thin
+Objective-C platform adapter.
 
 Small passing tests do not establish sustained performance or compatibility with
 every application.
@@ -67,10 +75,23 @@ Set `MOMOTA_STRESS_MS=60000 RTX_SMOKE_EXIT=1` when launching the browser for a
 can select isolated profile and report paths. The test exits nonzero on failure,
 and GPU/context failures are shown in the UI instead of an unconditional RTX badge.
 
-`python3 tools/gpu-health.py --output reports/health/before.json` records a baseline.
+`./run-tool.sh tools/gpu-health --output reports/health/before.json` records a baseline.
 After testing, use `--compare reports/health/before.json --output reports/health/after.json`
 to identify new local GPU reset or relevant crash reports. This tool does not upload
 logs or read authentication tokens.
+
+IOKit statistics come from `build/gpu-stats`, compiled from C by `./build.sh`.
+The `recoveryCount` field is retained as a review signal: on this AMD driver it
+can decrease during the same boot, so it is not a confirmed cumulative reset
+total. Actual `.gpuRestart` reports include the application path to distinguish
+the original VS Code from the copied RTX runtime. Chromium compositor diagnostics
+from `VizCompositorThread` are included alongside GPU-main/watchdog dumps.
+
+`./run-tool.sh tools/gpu-probe` runs both devices through the native probe with
+bounded process time. `./run-tool.sh tests/gpu-health.test` checks metadata-parser
+bounds and health comparisons. `./run-tool.sh tools/verify-gpu-process-exit`
+launches an isolated browser, terminates only its GPU child, and verifies that
+the smoke test rejects the run. Close other diagnostic browser instances first.
 
 The native probe has a ten-second command timeout. `MOMOTA_IOSURFACE=1` enables the
 shared-texture path; `MOMOTA_UNKNOWN_USAGE=1` tests implicit texture usage.

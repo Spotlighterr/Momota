@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
-python3 tools/check-driver-state.py
+bash run-tool.sh tools/check-driver-state
 unset ELECTRON_RUN_AS_NODE
 for key in ${!VSCODE_@}; do unset "$key"; done
 mkdir -p reports/code

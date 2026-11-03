@@ -2,6 +2,10 @@
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
 app="$PWD/build/Code RTX.app"
+if pgrep -f "^$app/Contents/MacOS/Code([[:space:]]|$)" >/dev/null; then
+  echo 'Close Code RTX before rebuilding its signed application bundle.' >&2
+  exit 1
+fi
 if [[ ! -d "$app" ]]; then
   mkdir -p build
   cp -cR '/Applications/Visual Studio Code.app' "$app"

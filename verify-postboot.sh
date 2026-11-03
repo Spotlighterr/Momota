@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
-python3 tools/check-driver-state.py
+bash run-tool.sh tools/check-driver-state
 mkdir -p reports/postboot
-python3 tools/gpu-health.py --output reports/postboot/before.json
 bash build.sh
+bash run-tool.sh tools/gpu-health --output reports/postboot/before.json
 bash verify-native.sh
 for usage in explicit implicit; do
   if [[ "$usage" = implicit ]]; then export MOMOTA_UNKNOWN_USAGE=1; else unset MOMOTA_UNKNOWN_USAGE; fi
@@ -16,13 +16,5 @@ bash build-browser.sh
 MOMOTA_PROFILE_DIR="$PWD/reports/postboot/profile" MOMOTA_BACKEND=ganesh \
   MOMOTA_STRESS_MS=60000 RTX_SMOKE_EXIT=1 RTX_REPORT_DIR="$PWD/reports/postboot/browser" \
   bash Launch-RTX-Browser.command
-python3 tools/gpu-health.py --compare reports/postboot/before.json --output reports/postboot/after.json
-python3 - <<'PY'
-import json
-health=json.load(open('reports/postboot/after.json'))
-browser=json.load(open('reports/postboot/browser/browser-gpu.json'))
-assert not health['newReports'], 'New GPU/crash reports appeared; inspect reports/postboot/after.json'
-assert not health['recoveryCountIncreases'], 'GPU recovery counter increased; inspect reports/postboot/after.json'
-assert browser['renderer']['ok'] and browser['stress']['ok']
-print('Post-boot GPU checks: PASS; no new GPU/crash reports observed during this run')
-PY
+bash run-tool.sh tools/gpu-health --compare reports/postboot/before.json --output reports/postboot/after.json
+bash run-tool.sh tools/verify-postboot-results

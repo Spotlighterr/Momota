@@ -19,13 +19,14 @@ workloads have not been validated. See [test results](VERIFIED.md).
 
 ## Build and run
 
-Requires working GPU drivers, Apple Command Line Tools, and x86_64 VS Code at
+Requires working GPU drivers, Apple Command Line Tools, Node.js 24, and x86_64 VS Code at
 `/Applications/Visual Studio Code.app`.
 
 ```sh
 git clone https://github.com/Spotlighterr/Momota.git
 cd Momota
 ./build.sh
+./build-typescript.sh
 ./verify-native.sh
 ./build-browser.sh
 ./prepare-code.sh
@@ -39,11 +40,12 @@ signed VS Code with Graphite disabled; close its existing instance first.
 The test app copies are signed ad hoc to load the shim. Read [usage and limits](docs/usage.md)
 before using them beyond testing.
 
-For a local GPU health report, run `python3 tools/gpu-health.py`.
+For a local GPU health report, run `./run-tool.sh tools/gpu-health`.
 After a driver update and restart, run `./verify-postboot.sh`.
 
 The GPU selection policy is C11; a thin Objective-C adapter calls Metal and IOKit.
-JavaScript is used for the diagnostic browser, not the native selection policy.
+TypeScript supplies the diagnostic browser and tools; generated JavaScript stays
+in the build directory. GPU statistics and selection policy use C.
 
 ## Credits
 

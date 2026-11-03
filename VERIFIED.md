@@ -73,10 +73,10 @@ and record document visibility so window scheduling does not silently limit the
 timer-driven loop. The resulting 60-second run completed 7425 frames and 248
 resizes with no pixel errors or context loss (124 iterations/second).
 This is diagnostic throughput, not display FPS or proof of general performance.
-The final session snapshot showed the AMD recovery counter increase from 0 to 1,
-even though no new diagnostic report had appeared. Overall GPU stability therefore
-remains unresolved. Health comparisons and the post-boot gate now also check
-counter increases instead of relying only on diagnostic files.
+The AMD `recoveryCount` statistic changed from 0 to 1 and later 14, but subsequent
+samples returned 1 and 0 in the same boot. Its cumulative semantics are unverified
+on this driver; an increase is a review signal, not proof of a new GPU reset.
+Health comparisons retain changes alongside actual crash/reset reports.
 System-wide NVIDIA-primary rendering,
 Safari routing, login-flow stability, and long-term validation remain unfinished.
 
@@ -91,3 +91,38 @@ At inspection, AMD had roughly 500 MB of free VRAM and system swap usage was zer
 The health collector now includes Chromium Crashpad GPU diagnostics in addition
 to macOS reports. A diagnostic dump is reported as such, not automatically labeled
 as a fatal exception. Raw minidumps remain local and are not included in Git.
+
+## C/TypeScript migration and REA investigation
+
+The browser, inspector, driver-state check, health collector, and validation tools
+are now strict TypeScript. IOKit statistics are read by a standalone C11 binary;
+no authored JavaScript, Python, or Ruby remains in the repository. Emitted
+JavaScript is kept under build/ and packaged into Electron. The old workspace JXA
+probe was backed up locally and replaced by a TypeScript entrypoint calling the
+native Metal probe with a process deadline.
+
+The TypeScript browser passed a 60-second run: 7351 frames, 246 resizes, correct
+pixels, and no context loss. The C adapter again passed all nine native scenarios.
+Parser tests cover truncated streams, overflowing minidump RVAs, compositor thread
+classification, and accelerator identity comparisons. Browser smoke checks now
+fail on GPU/renderer process termination even if a later pixel check recovers.
+The isolated termination check passed: only the test GPU child received SIGTERM,
+and the browser rejected the run with exit code 1. A zero-stress startup check
+also passed with a captured frame and zero process failures after bounded capture
+retries were added. The TypeScript Code inspector passed actual NVIDIA readback
+and closed only the selected test instance.
+The final `verify-postboot.sh` run also passed end to end after migration:
+7478 frames/250 resizes in 60 seconds, captured frame, zero process failures,
+and no new crash/reset reports or recovery-statistic increase in that window.
+
+REA inspected the installed Electron fuse bytes, parsed a historical Apple IPS
+report, recorded a live original-Code GPU-process sample, and passively observed
+the compiled diagnostic browser through CDP. Evidence and limitations are indexed
+in [the investigation ledger](docs/gpu-investigation.md); full captures stay local.
+
+Original VS Code still produced an AMD `.gpuRestart` report at 02:25 on November 4,
+after the driver update. Its path names the original `/Applications` installation,
+with `main0` and unpack shaders. Three 02:11–02:12 Crashpad dumps report
+`VizCompositorThread`; the old health filter missed these because their thread
+names lack `Gpu`. The filter and regression test now include that compositor.
+The original VS Code stability issue is not resolved by the passing RTX tests.

@@ -1,0 +1,16 @@
+{
+  "name": "momota",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Experimental per-app NVIDIA render offload diagnostics",
+  "scripts": {
+    "build:typescript": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "inspect:code": "node build/js/inspect-code.js"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "electron": "43.8.3",
+    "typescript": "7.0.2"
+  }
+}

@@ -9,7 +9,9 @@ not completion of that system-wide objective.
 - `native/gpu_policy.c`: C11 registry-filter parsing and PCI identity matching.
 - `rtx_select.m`: the Objective-C adapter for Metal device objects and IOKit.
 - `probe.m`: native Metal compute, texture, and IOSurface regression checks.
-- `browser/`: JavaScript diagnostic UI and WebGL stress checks.
+- `native/gpu_stats.c`: direct IOKit accelerator statistics with registry identity.
+- `browser/`: strict TypeScript diagnostic UI and WebGL stress checks.
+- `tools/`: TypeScript driver checks, Crashpad metadata and health comparisons.
 
 The policy has no interpreted runtime, heap allocation, or third-party dependency.
 Objective-C remains at the platform boundary because Metal exposes Objective-C

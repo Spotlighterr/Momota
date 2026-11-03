@@ -1,0 +1,75 @@
+# GPU investigation ledger
+
+Updated November 4, 2026. Evidence is local under `reports/rea/evidence.json`.
+Raw reports, minidumps, app profiles and symbol downloads are excluded from Git.
+
+## Questions and findings
+
+| Question | Status | Evidence and limits |
+| --- | --- | --- |
+| Does original VS Code execute the AMD Metal driver? | Observed | The two-second sample includes `GFX9_MtlCmdBuffer` and AMD render-encoder calls. Sampling does not observe every command or identify the exact failing instruction. |
+| Did the NVIDIA update fix original Code resets? | No | A new macOS GPU Reset report at 02:25 names AMD Renoir and the original `/Applications/Visual Studio Code.app` helper path. This is separate from the isolated RTX tests. |
+| Are compositor diagnostic dumps included in health checks? | Fixed | Three 02:11–02:12 original-Code dumps report `VizCompositorThread`. The old name filter excluded them. TypeScript decoding now admits that exact thread and tests its metadata. A diagnostic dump alone is not a fatal crash. |
+| Does historical media analysis crash in the NVIDIA path? | Recorded | The pre-reboot IPS report names `_platform_memmove` and `nvk_UpdateDescriptorSets`. This is historical evidence, not a 2.6.6 reproduction. |
+| Does `recoveryCount` count all resets cumulatively on this driver? | Unresolved | Samples in the same boot fall from 14 to 1 and 0. Preserve this statistic as an advisory signal; use actual reset reports for confirmed events. The verification gate conservatively requests review after an increase. |
+| Does the C/TypeScript RTX path work? | Bounded validation | All nine native cases pass. The TypeScript browser completed 7351 frames/246 resizes in 60 seconds without pixel errors or context loss. Code RTX passes NVIDIA readback. These checks do not establish system-wide routing or long-term stability. |
+| Can `argv.json` persist the renderer flags? | Unsupported in inspected startup code | The shipped `out/mainImpl.js` function `H3` whitelists a small set of persistent options; `disable-features` and `use-angle` are absent. Its CLI handling preserves existing Chromium feature switches. Launchers remain the supported route. This is static analysis, not a new original-Code launch test. |
+| Can upstream Electron symbols identify the fault precisely? | Rejected mismatch | Installed framework UUID is `4C4C445B-5555-3144-A131-99E29084BBD5`; upstream 43.8.3 symbols identify `4C4C443D-5555-3144-A1E2-15C48C1A1FD4`. Different build identities prohibit assigning their function names to this dump. |
+| Is global NVIDIA rendering with AMD display complete? | No | WindowServer/Safari routing and the kernel/framebuffer integration remain unimplemented. Per-app selection does not satisfy that system-wide requirement. |
+
+## REA evidence index
+
+- `ev_0de38b6a54335dc5b576af2f168709fcec9d70ccee4ae6d5c2a0df31f927303d`:
+  installed Electron fuse inspection. Inspector and RunAsNode fuse bytes are
+  enabled; this does not prove Inspector is currently active.
+- `ev_977925277c17e101b7814fe310838f6d1aea1b445f6cf1d6ca468da86022d030`:
+  complete historical mediaanalysisd IPS decoding, eight threads/39 frames.
+  Recorded symbols are not independently symbolicated by REA.
+- `ev_06e6e29def544da1de3f1e575f105f504021a9ae8266717b902ef2e504eadcd7`:
+  owned `sample` command against the selected original-Code GPU process. Command
+  exited zero. Process-tree sampling was incomplete; target sample text is kept
+  locally in `original-code-gpu-sample.txt`.
+- `ev_a6938911f7dc65ba268413fcadb3f7a97213be88a65e5269a506afec1036a25f`:
+  LLDB decoded a selected original-Code Crashpad dump, exit zero, owned process
+  cleanup verified. Its synthetic exception code is `0x43507378`. Framework
+  symbols remain unnamed; module mapping warnings and process-sampling limits
+  remain explicit. An earlier noisy attempt timed out and yielded no stack.
+- `ev_37b816b80a6749f6d1fc50a105afb7fa68c5eadaea2401c00511bc404d4fbf09`:
+  passive CDP observation of the compiled GPU test page, one-second window. This
+  observed DOM/resources; it did not evaluate JavaScript or perform GPU tests.
+  NVIDIA/pixel claims come from the separate native and browser reports.
+- `ev_e63b2f1886414de8583c67192e28693a889276b75d5b62a10f3b7fc625dff792`:
+  shipped VS Code application inventory with `out/main.js` selected for static
+  analysis. Semantic retention was partial at the configured node ceiling;
+  unselected sources remain unknown. Startup whitelist details above were read
+  separately from the shipped `out/mainImpl.js`, not inferred from this graph.
+
+## Repairs made from observations
+
+- TypeScript replaces authored JavaScript/Python/Ruby helpers; IOKit collection
+  uses C and emits exact registry IDs as strings, avoiding duplicate `ioreg` rows.
+- Minidump parsing bounds every stream and 64-bit name RVA before reading.
+- GPU/renderer process termination cannot be hidden by a recovered pixel check.
+- Immediate frame capture can race the first published display surface. It now
+  retries within a bounded deadline, keeps pixel evidence on failure, and removes
+  stale screenshots. Capture failure remains a verification failure.
+- The inspector has bounded requests and refuses workbenches outside Code RTX.
+
+The final post-boot suite passed after these changes: native/IOSurface checks,
+7478 browser iterations and 250 resizes in 60 seconds, captured frame, no process
+failures, and no new reports or counter increases during its own comparison
+window. This does not erase the earlier original-Code reset at 02:25.
+
+## Remaining work
+
+The upstream [NootedRed blend-shader issue #158](https://github.com/ChefKissInc/NootedRed/issues/158)
+remains open. A separate [Sequoia VS Code/Edge freeze report #363](https://github.com/ChefKissInc/NootedRed/issues/363)
+was closed as its duplicate. This is a relevant candidate for the AMD resets,
+not a demonstrated match to this machine's exact failing instruction. Upstream
+also distinguishes ANGLE/WebGL selection from Chromium's own drawing path;
+forcing ANGLE Metal must not be described as a complete compositor fix.
+
+Original-Code AMD reset root cause, verified GitHub login stability, heavy
+workloads, and global routing remain unresolved. Migrating the diagnostic source
+language does not repair the AMD or NVIDIA driver by itself. No global injection,
+EFI changes, system app patching, or automatic reboot was performed in this pass.

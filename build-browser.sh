@@ -4,6 +4,11 @@ cd -- "$(dirname -- "$0")"
 base="$PWD"
 app="$base/build/RTX Browser.app"
 source_app='/Applications/Visual Studio Code.app'
+if pgrep -f "^$app/Contents/MacOS/Code([[:space:]]|$)" >/dev/null; then
+  echo 'Close RTX Browser before rebuilding its signed application bundle.' >&2
+  exit 1
+fi
+bash build-typescript.sh
 if [[ ! -d "$app" ]]; then
   mkdir -p "$app/Contents/Resources" "$app/Contents/MacOS"
   cp -cR "$source_app/Contents/Frameworks" "$app/Contents/Frameworks"
@@ -12,7 +17,8 @@ if [[ ! -d "$app" ]]; then
   cp "$source_app/Contents/Resources/LICENSES.chromium.html" "$app/Contents/Resources/LICENSES.chromium.html"
 fi
 mkdir -p "$app/Contents/Resources/app"
-cp browser/* "$app/Contents/Resources/app/"
+cp browser/*.html browser/package.json "$app/Contents/Resources/app/"
+cp build/js/browser/*.js "$app/Contents/Resources/app/"
 cp build/rtx_select.dylib "$app/Contents/Frameworks/rtx_select.dylib"
 cat > "$app/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

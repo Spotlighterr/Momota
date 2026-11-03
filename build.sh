@@ -2,6 +2,8 @@
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
 mkdir -p build
+xcrun clang -std=c11 -O2 -Wall -Wextra -Werror -framework CoreFoundation \
+  -framework IOKit native/gpu_stats.c -o build/gpu-stats
 xcrun clang -std=c11 -O2 -Wall -Wextra -Werror -Inative native/gpu_policy.c \
   tests/gpu_policy_test.c -o build/gpu-policy-test
 ./build/gpu-policy-test
