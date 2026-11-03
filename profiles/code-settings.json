@@ -1,6 +1,7 @@
 {
   "update.mode": "none",
   "telemetry.telemetryLevel": "off",
+  "github-authentication.preferDeviceCodeFlow": true,
   "workbench.startupEditor": "none",
   "window.title": "Code RTX — ${activeEditorShort}${separator}${rootName}"
 }
