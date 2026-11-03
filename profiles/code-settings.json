@@ -1,0 +1,6 @@
+{
+  "update.mode": "none",
+  "telemetry.telemetryLevel": "off",
+  "workbench.startupEditor": "none",
+  "window.title": "Code RTX — ${activeEditorShort}${separator}${rootName}"
+}
