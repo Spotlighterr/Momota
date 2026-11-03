@@ -62,6 +62,13 @@ window. This does not erase the earlier original-Code reset at 02:25.
 
 ## Remaining work
 
+The lower-left Sign in retry also exposes a separate verified network defect:
+Microsoft CDN/update TLS connections time out over IPv6 but work over IPv4.
+Process-scoped mappings removed those timeouts in an isolated run of the signed
+original VS Code. See [the authentication investigation](github-authentication.md).
+Opening Accounts stayed responsive in that isolated profile; the actual user's
+full Sign in action still needs a matching renderer trace before claiming a fix.
+
 The upstream [NootedRed blend-shader issue #158](https://github.com/ChefKissInc/NootedRed/issues/158)
 remains open. A separate [Sequoia VS Code/Edge freeze report #363](https://github.com/ChefKissInc/NootedRed/issues/363)
 was closed as its duplicate. This is a relevant candidate for the AMD resets,

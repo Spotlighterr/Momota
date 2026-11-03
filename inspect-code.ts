@@ -3,7 +3,7 @@ import * as path from 'node:path';
 
 const root = path.resolve(__dirname, '../..');
 const port = 9339;
-interface CDPTarget { type: string; url: string; webSocketDebuggerUrl: string; }
+export interface CDPTarget { type: string; url: string; webSocketDebuggerUrl: string; }
 interface CDPMessage { id?: number; result?: unknown; error?: unknown; }
 interface PendingCall {
   resolve(value: unknown): void;
@@ -15,15 +15,15 @@ interface CDPConnection {
   call<T>(method: string, params?: Record<string, unknown>): Promise<T>;
 }
 
-async function fetchJSON<T>(url: string): Promise<T> {
+export async function fetchJSON<T>(url: string): Promise<T> {
   const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
   if (!response.ok) throw Error(`CDP HTTP ${response.status}`);
   return await response.json() as T;
 }
 
-async function connect(url: string): Promise<CDPConnection> {
+export async function connect(url: string, selectedPort = port): Promise<CDPConnection> {
   const parsed = new URL(url);
-  if (parsed.protocol !== 'ws:' || parsed.hostname !== '127.0.0.1' || parsed.port !== String(port)) {
+  if (parsed.protocol !== 'ws:' || parsed.hostname !== '127.0.0.1' || parsed.port !== String(selectedPort)) {
     throw Error('CDP WebSocket must remain on the selected loopback endpoint');
   }
   const socket = new WebSocket(url);
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
     browser.socket.close();
   }
 }
-main().catch((error: unknown) => {
+if (require.main === module) main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
