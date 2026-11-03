@@ -57,14 +57,23 @@ settings and extensions directory; it does not import the original profile.
 
 These frame counts are diagnostic loop throughput, not display FPS or a benchmark.
 
-NullMoth 2.6.6 has been installed using its official installer, with backup and
-rollback prepared. Running kernel extensions still report 2.6.5 until restart.
-Post-update hardware validation is pending. Momota now refuses GPU launch/tests
-when installed and loaded driver versions differ.
+NullMoth 2.6.6 was installed using its official installer, with backup and
+rollback prepared. After the November 4 restart, all four loaded extensions
+match the installed 2.6.6 versions. Momota refuses GPU launch/tests when
+installed and loaded driver versions differ.
 
 GPU policy parsing and PCI matching have been extracted to C11 and their boundary
-tests pass. The new adapter build succeeds; hardware regression must be rerun
-after restart with matching driver versions. System-wide NVIDIA-primary rendering,
+tests pass. After restart, the C adapter passed all nine native hardware scenarios
+and both explicit/implicit IOSurface usage checks. The browser completed a
+60-second loop with correct pixels and no new relevant crash/reset reports;
+Code RTX also selected NVIDIA and returned correct pixels with sandboxing enabled.
+Initial diagnostic loop throughput varied substantially between runs (9 and 50
+iterations/second). Automated browser checks now disable background throttling
+and record document visibility so window scheduling does not silently limit the
+timer-driven loop. The resulting 60-second run completed 7425 frames and 248
+resizes with no pixel errors or context loss (124 iterations/second).
+This is diagnostic throughput, not display FPS or proof of general performance.
+System-wide NVIDIA-primary rendering,
 Safari routing, login-flow stability, and long-term validation remain unfinished.
 
 ### Recurring original VS Code stalls

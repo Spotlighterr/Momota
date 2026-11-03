@@ -35,9 +35,10 @@ System-wide support requires demonstrating a compatible compositor/render-device
 and framebuffer-sharing path. Disabling AMD acceleration or removing the driver's
 WindowServer guard alone is not evidence that this path works.
 
-## Next hardware gate
+## Post-update hardware validation
 
-Restart to load the installed NullMoth 2.6.6 kernel extensions, then run
-`./verify-postboot.sh`. Inspect any new system GPU resets and application crashes
-before expanding the routing scope. The current installed/running version mismatch
-must be resolved before new GPU tests.
+The November 4 restart loaded all four NullMoth 2.6.6 kernel extensions. The C
+adapter passed all nine native scenarios and both IOSurface usage variants;
+the browser and Code RTX selected NVIDIA and returned correct pixels.
+Run `./verify-postboot.sh` after future driver updates. Inspect new system GPU
+resets and application crashes before expanding the routing scope.

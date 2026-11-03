@@ -43,8 +43,9 @@ app.on('child-process-gone', (_, details) => {
 });
 if (single) app.whenReady().then(async () => {
   window = new BrowserWindow({ width: 1100, height: 780, title: 'Momota RTX Browser — Experimental',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false } });
-  page = new WebContentsView({ webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: !smoke } });
+  // Automated diagnostic throughput must not depend on which app has focus.
+  page = new WebContentsView({ webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, backgroundThrottling: !smoke } });
   window.contentView.addChildView(page);
   const resize = () => {
     const [width, height] = window.getContentSize();
@@ -71,7 +72,7 @@ if (single) app.whenReady().then(async () => {
     catch (error) { status(false, error.message); }
   });
   async function check() {
-    const report = { backend, gpu: await timeout(app.getGPUInfo('complete'), 15000, 'GPU information'),
+    const report = { backend, backgroundThrottling: !smoke, gpu: await timeout(app.getGPUInfo('complete'), 15000, 'GPU information'),
       features: app.getGPUFeatureStatus(), renderer: await timeout(page.webContents.executeJavaScript('window.gpuResult'), 5000, 'GPU check') };
     const duration = Number(process.env.MOMOTA_STRESS_MS || 0);
     if (duration) {

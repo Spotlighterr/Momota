@@ -21,6 +21,7 @@ document.getElementById('result').textContent=JSON.stringify(window.gpuResult,nu
 canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();window.gpuResult.ok=false;window.gpuResult.contextLost=true;});
 window.runGpuStress=async function(duration){
   const start=performance.now();let frames=0,errors=0,resizes=0;
+  const visibilityAtStart=document.visibilityState;
   if(!gl||!window.gpuResult.ok)return {ok:false,error:'NVIDIA WebGL was not verified'};
   while(performance.now()-start<duration){
     if(frames%30===0){canvas.width=frames%60===0?1280:640;canvas.height=frames%60===0?720:320;resizes++;}
@@ -32,7 +33,7 @@ window.runGpuStress=async function(duration){
     await new Promise(resolve=>setTimeout(resolve,0));
   }
   const elapsed=performance.now()-start;
-  const result={ok:errors===0&&frames>0&&window.gpuResult.ok,frames,resizes,errors,elapsedMs:Math.round(elapsed),framesPerSecond:Math.round(frames*1000/elapsed)};
+  const result={ok:errors===0&&frames>0&&window.gpuResult.ok,frames,resizes,errors,visibilityAtStart,visibilityAtEnd:document.visibilityState,elapsedMs:Math.round(elapsed),framesPerSecond:Math.round(frames*1000/elapsed)};
   document.getElementById('result').textContent=JSON.stringify({gpu:window.gpuResult,stress:result},null,2);
   return result;
 };

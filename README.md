@@ -8,7 +8,7 @@ output. System-wide routing is not implemented yet.
 ## Current status
 
 Working on an ASUS GA401QC (2021) with RTX 3050 Laptop 4 GB, macOS 15.8.2,
-NullMoth 2.6.5, and NootedRed 0.8.10:
+NullMoth 2.6.6, and NootedRed 0.8.10:
 
 - NVIDIA rendering in the test browser and a separate copy of VS Code.
 - Correct Metal compute and rendered pixel results.
