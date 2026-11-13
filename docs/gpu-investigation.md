@@ -3,7 +3,58 @@
 Updated November 4, 2026. Evidence is local under `reports/rea/evidence.json`.
 Raw reports, minidumps, app profiles and symbol downloads are excluded from Git.
 
+## November 14: freezes after NVIDIA returned
+
+The owner reports the whole original VS Code window lagging/freezing after
+NVIDIA was enabled. `reports/postboot/code-live-status.txt` from the new 02:27
+boot explicitly reports AMD `1002:1638` as `*ACTIVE*`, NVIDIA `10de:25a2` as the
+second device, and `skia_graphite: enabled_on`. Enabling NVIDIA hardware did not
+switch this original Code instance to the Momota RTX path.
+
+The previous boot's AMD GPU reset reports at 02:23:21, 02:23:32 and 02:23:43 name
+the original Code Helper and contain Dawn shader names. These precede the native
+baseline probe at approximately 02:23:40. Later resets also contain that probe's
+compute workload; avoid further GPU stress while the session is affected.
+The WindowServer IPS at 02:24:51 has bug type 409; its presence alone does not
+establish a fatal crash. The later 02:24:41 and 02:25:56 reset reports leave
+application/path blank. The health parser now preserves these as null rather
+than accidentally reading the following field across a newline.
+
+REA evidence `ev_976536467445d0b30ecb2d66b05e0955487a4bbbe811f3572a89cfd30d5ba860`
+records a two-second sample of the current original-Code GPU process, PID 497.
+The owned sample command exited successfully; REA process-tree sampling was
+partial. Its output is `reports/postboot/code-gpu-live-sample.txt`. Subsequent
+five-second samples include actual AMD Metal render-encoder and IOSurface calls
+in `code-gpu-freeze-sample.txt`. They establish AMD execution, not the exact
+instruction responsible for the reported freeze. No new reset reports were
+observed between the new boot's health snapshots during collection.
+
+An isolated run of the signed original Code with `--disable-gpu` and extensions
+disabled reported software GPU compositing/rasterization and disabled Graphite,
+captured a frame and answered ten renderer heartbeats in 1–193 ms. The diagnostic
+instance exited; no new crash/reset reports or recovery-statistic increases were
+observed in this short window. Evidence is
+`reports/code-software/1794598367632/result.json`. This is a bounded fallback
+check with a fresh profile, not validation of the owner's extensions or workload.
+`Launch-Code-Software.command` makes that fallback available with the existing
+profile after quitting original Code. It does not change EFI or GPU power mode.
+
+The exact reason NVIDIA presence correlates with the owner's recurrence is
+unresolved: a controlled GPU-enabled/disabled comparison with matching boot,
+profile and workload has not been performed. The current evidence supports an
+AMD/Graphite rendering failure candidate; it does not prove a specific
+NootedRed bug or exclude cross-driver effects. Microsoft CDN timeouts also
+persist, but they do not explain the confirmed AMD GPU resets.
+
 ## Questions and findings
+
+The later November 14 NVIDIA-only post-boot suite passed native/IOSurface checks
+and 6631 browser iterations/222 resizes with a captured frame and no new health
+signals. An intervening hidden-window capture failure remains retained under
+`reports/continue-hidden-capture/`; it was not counted as a passing suite.
+Code RTX separately passed NVIDIA pixel readback, including an immediate-start
+check after adding a bounded workbench-readiness wait to the inspector. These
+results establish the scoped RTX path, not a repair of original-Code AMD resets.
 
 | Question | Status | Evidence and limits |
 | --- | --- | --- |

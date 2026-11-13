@@ -1,8 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 cd -- "$(dirname -- "$0")"
+if [[ $# -gt 1 || ( $# -eq 1 && "$1" != --nvidia-only ) ]]; then
+  echo 'Usage: ./verify-native.sh [--nvidia-only]' >&2
+  exit 2
+fi
 bash run-tool.sh tools/check-driver-state
 mkdir -p reports/native
+if [[ "${1:-}" = --nvidia-only ]]; then
+  env -u RTX_REGISTRY_ID RTX_FORCE=1 DYLD_INSERT_LIBRARIES="$PWD/build/rtx_select.dylib" \
+    ./build/rtx-probe > reports/native/forced.txt 2> reports/native/forced.log
+  bash run-tool.sh tools/verify-native-results --nvidia-only
+  exit 0
+fi
 env -u RTX_FORCE -u RTX_REGISTRY_ID -u DYLD_INSERT_LIBRARIES \
   ./build/rtx-probe > reports/native/baseline.txt 2> reports/native/baseline.log
 env -u RTX_REGISTRY_ID RTX_FORCE=1 DYLD_INSERT_LIBRARIES="$PWD/build/rtx_select.dylib" \

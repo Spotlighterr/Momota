@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 
-const scenarios = ['baseline', 'forced', 'disabled', 'missing-target', 'invalid-invalid', 'invalid-0',
+const args = process.argv.slice(2);
+if (args.length > 1 || (args.length === 1 && args[0] !== '--nvidia-only')) throw Error('Usage: verify-native-results [--nvidia-only]');
+const scenarios = args[0] === '--nvidia-only' ? ['forced'] : ['baseline', 'forced', 'disabled', 'missing-target', 'invalid-invalid', 'invalid-0',
   'invalid--1', 'invalid-18446744073709551616', 'invalid-empty'];
 for (const name of scenarios) {
   const text = readFileSync(`reports/native/${name}.txt`, 'utf8');

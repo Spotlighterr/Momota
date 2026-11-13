@@ -28,6 +28,15 @@ export interface HealthSnapshot {
   recoveryCountIncreases?: { name: string; registryID?: string; before: number; after: number }[];
 }
 
+export function gpuResetMetadata(text: string): Pick<Diagnostic, 'application' | 'applicationPath' | 'gpu' | 'shaders'> {
+  // Whitespace must not consume a newline when the report leaves a field empty.
+  const field = (name: string): string | null => text.match(new RegExp(`^${name}:[ \\t]*([^\\r\\n]*)`, 'm'))?.[1].trim() || null;
+  return {
+    application: field('Application'), applicationPath: field('Path'), gpu: field('Graphics Hardware'),
+    shaders: [...new Set([...text.matchAll(/Hash:.*?\[(.*?)\]/g)].map(match => match[1]))].sort()
+  };
+}
+
 /** Read only the exception and thread-name streams, not captured heap data. */
 export function gpuDumpMetadata(data: Buffer): { thread: string; exceptionCode: string } | null {
   if (data.length < 32 || data.toString('ascii', 0, 4) !== 'MDMP') return null;
@@ -104,10 +113,7 @@ export function collectHealth(): HealthSnapshot {
         const item: Diagnostic = { name, modified: fs.statSync(file).mtimeMs / 1000 };
         if (reset) {
           const text = fs.readFileSync(file, 'utf8');
-          item.application = text.match(/^Application:\s*(.*)/m)?.[1] ?? null;
-          item.applicationPath = text.match(/^Path:\s*(.*)/m)?.[1] ?? null;
-          item.gpu = text.match(/^Graphics Hardware:\s*(.*)/m)?.[1] ?? null;
-          item.shaders = [...new Set([...text.matchAll(/Hash:.*?\[(.*?)\]/g)].map(match => match[1]))].sort();
+          Object.assign(item, gpuResetMetadata(text));
         }
         result.reports.push(item);
       } catch { /* Reports can rotate during collection. */ }

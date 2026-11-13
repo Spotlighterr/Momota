@@ -20,7 +20,7 @@ driver's cross-GPU display path.
 
 ## Unresolved system-wide path
 
-NullMoth's headless path exposes NVIDIA to applications and copies completed
+The verified NullMoth 2.6.6 headless path exposes NVIDIA to applications and copies completed
 IOSurfaces to the display GPU. Its plugin deliberately keeps WindowServer on the
 GPU that owns the display. Momota's per-process interposition does not override
 that kernel/framebuffer integration or protected system process behavior.
@@ -36,6 +36,15 @@ References: [headless implementation](https://github.com/nullmoth/nvidia-macos-d
 System-wide support requires demonstrating a compatible compositor/render-device
 and framebuffer-sharing path. Disabling AMD acceleration or removing the driver's
 WindowServer guard alone is not evidence that this path works.
+
+The November 14 [upstream review and experiment plan](system-rendering.md)
+identifies newer compositor paths in NullMoth 2.9 and PrimeBridge 0.7.1. The former
+declines this machine's Vega panel GPU by default; the latter includes its PCI ID
+but requires exclusive panel ownership and does not support NullMoth 2.9.
+Neither has been validated on this GA401QC. Earlier November 14 checks found
+the NVIDIA PCI device and core loaded drivers missing. Later checks restored
+PCI visibility and passed the NVIDIA-only native/browser suite; the recovery
+mechanism and the whole-desktop path remain unverified.
 
 ## Post-update hardware validation
 

@@ -1,6 +1,20 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { gpuDumpMetadata, compareHealth, HealthSnapshot } from '../tools/gpu-health';
+import { gpuDumpMetadata, gpuResetMetadata, compareHealth, HealthSnapshot } from '../tools/gpu-health';
+
+test('empty reset attribution does not consume the next report field', () => {
+  const metadata = gpuResetMetadata('Application:         \nPath:                \nTailspin: /private/report.tailspin\nGraphics Hardware: AMD Renoir\n');
+  assert.equal(metadata.application, null);
+  assert.equal(metadata.applicationPath, null);
+  assert.equal(metadata.gpu, 'AMD Renoir');
+});
+
+test('reset attribution retains the exact application path and distinct shaders', () => {
+  assert.deepEqual(gpuResetMetadata('Application:\tCode Helper\r\nPath: /Applications/Visual Studio Code.app/Code Helper  \r\nGraphics Hardware: AMD Renoir\r\nHash: a [main0]\nHash: b [test]\nHash: c [main0]\n'), {
+    application: 'Code Helper', applicationPath: '/Applications/Visual Studio Code.app/Code Helper',
+    gpu: 'AMD Renoir', shaders: ['main0', 'test']
+  });
+});
 
 test('truncated and malicious Crashpad stream offsets do not escape bounds', () => {
   for (const size of [0, 4, 31, 32, 64]) assert.equal(gpuDumpMetadata(Buffer.alloc(size)), null);

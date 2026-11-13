@@ -3,7 +3,7 @@ set -euo pipefail
 unset ELECTRON_RUN_AS_NODE
 for key in ${!VSCODE_@}; do unset "$key"; done
 app='/Applications/Visual Studio Code.app/Contents/MacOS/Code'
-if ps -axo comm= | grep -Fxq "$app"; then
+if /bin/ps -axo comm= | /usr/bin/grep -Fx "$app" >/dev/null; then
   echo 'Close the original VS Code first so the rendering flags can take effect.' >&2
   exit 2
 fi

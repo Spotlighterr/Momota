@@ -16,6 +16,10 @@ NullMoth 2.6.6, and NootedRed 0.8.10:
 
 Safari and desktop composition still use AMD. Long-term stability and heavy
 workloads have not been validated. See [test results](VERIFIED.md).
+The [system rendering investigation](docs/system-rendering.md) tracks newer
+upstream hybrid paths and the prerequisites for a full desktop trial.
+See [boot initialization](docs/boot-initialization.md) for experimental ASUS GPU
+recovery and the ALC285 audio investigation.
 
 ## Build and run
 
@@ -37,11 +41,15 @@ Use `./Launch-Code-RTX.command` for VS Code. Both launchers use separate profile
 The default renderer uses Ganesh over ANGLE Metal to avoid the Graphite path involved
 in observed AMD GPU resets. `Launch-Code-Compatible.command` starts the original,
 signed VS Code with Graphite disabled; close its existing instance first.
+For recurring freezes, `Launch-Code-Software.command` starts original VS Code
+with GPU acceleration disabled as a temporary workaround.
 The test app copies are signed ad hoc to load the shim. Read [usage and limits](docs/usage.md)
 before using them beyond testing.
 
 For a local GPU health report, run `./run-tool.sh tools/gpu-health`.
 After a driver update and restart, run `./verify-postboot.sh`.
+Use `./verify-postboot.sh --nvidia-only` to check RTX while avoiding the AMD
+baseline/fallback workloads involved in the current freeze investigation.
 
 The GPU selection policy is C11; a thin Objective-C adapter calls Metal and IOKit.
 TypeScript supplies the diagnostic browser and tools; generated JavaScript stays

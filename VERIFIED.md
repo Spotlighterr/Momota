@@ -1,5 +1,51 @@
 # Validation status
 
+## November 14 resumed RTX checks
+
+Later checks in the 02:27 boot selected RTX 3050 correctly and passed Metal
+observer enumeration, 256/256 compute values and 4096/4096 rendered pixels.
+IOSurface rendering passed with explicit and implicit texture usage. The Ganesh
+browser passed a 60-second visible run with 6548 iterations, 219 resizes, correct
+pixels, sandboxing and a captured frame. Code RTX separately selected NVIDIA and
+returned `[64,127,191,255]` with GL error zero. No new relevant reports or AMD
+recovery-counter increases appeared in that comparison window.
+
+A subsequent browser run completed 7457 iterations/249 resizes with correct
+pixels but failed frame capture while hidden. It remains a failed run; its
+evidence is retained under `reports/continue-hidden-capture/`. Diagnostic loop
+counts are not display FPS or evidence of sustained performance.
+
+The subsequent sequential `./verify-postboot.sh --nvidia-only` run passed end to
+end: 6631 iterations/222 resizes over 60059 ms, visible at start/end, correct
+pixels, captured frame, GPU sandbox enabled and zero process failures. Its health
+comparison found no new relevant reports or recovery-counter increases. The
+success marker at `reports/postboot/verification.json` explicitly records
+`scope: nvidia-only` and `amdFallbackTested: false`.
+
+The new `--nvidia-only` verification option excludes AMD baseline/fallback
+workloads and labels that scope explicitly. The complete nine-case suite has
+not been revalidated on this boot. Ten ACPI interpreter scenarios passed again;
+these execute synthetic firmware, not this laptop's ACPI recovery method.
+
+The owner has no external monitor available for the required direct-output
+trial, so whole-desktop rendering remains unvalidated.
+
+## November 14 second-reset check
+
+NVIDIA PCI visibility returned and all four installed/loaded NullMoth extensions
+matched version 2.6.6. This establishes device discovery and driver loading only.
+The AMD baseline compute command timed out, and new AMD GPU restart reports
+identified the original VS Code helper. A separate NVIDIA-forced probe blocked
+while Metal initialized the AMD device during enumeration, before NVIDIA
+selection. Post-boot native, IOSurface and browser verification is incomplete.
+See [boot investigation](docs/boot-initialization.md) for evidence and limits.
+
+The native probe now arms a 45-second process alarm before Metal discovery,
+covering setup outside its existing ten-second command wait. A kernel wait may
+delay signal handling; the deadline is not a hardware reset or a driver fix.
+
+## Historical validation
+
 Tested on November 3, 2026. The user also confirmed that the trial apps worked.
 
 ## Test system

@@ -3,6 +3,15 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/CAMetalLayer.h>
 #import <IOSurface/IOSurface.h>
+#include <signal.h>
+#include <unistd.h>
+
+static void probeDeadline(int signalNumber) {
+    (void)signalNumber;
+    static const char message[] = "Metal probe exceeded its 45-second process deadline\n";
+    (void)write(STDERR_FILENO, message, sizeof(message) - 1);
+    _exit(124);
+}
 
 static BOOL submitAndWait(id<MTLCommandBuffer> command) {
     dispatch_semaphore_t completed = dispatch_semaphore_create(0);
@@ -19,7 +28,17 @@ static BOOL submitAndWait(id<MTLCommandBuffer> command) {
     return command.status == MTLCommandBufferStatusCompleted;
 }
 
-int main(void) { @autoreleasepool {
+int main(void) {
+    // Device discovery and driver setup can block before command submission.
+    struct sigaction deadline = {0};
+    deadline.sa_handler = probeDeadline;
+    sigemptyset(&deadline.sa_mask);
+    if (sigaction(SIGALRM, &deadline, NULL) != 0) {
+        perror("install probe deadline");
+        return 1;
+    }
+    alarm(45);
+    @autoreleasepool {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     if (!device) { fprintf(stderr, "No Metal device\n"); return 1; }
     printf("default=%s registry=%llu\n", device.name.UTF8String, (unsigned long long)device.registryID);

@@ -21,7 +21,34 @@ the shim. No background service, global injection, or startup item is installed.
 
 ## Apps
 
+### Daily startup
+
+Once NVIDIA is visible and the installed/loaded driver versions match, launch
+`Launch-Code-RTX.command` or `Launch-RTX-Browser.command`. There is no requirement
+to rebuild, reset NVRAM, hard-reset the laptop or toggle GPU power for each launch.
+The launchers check driver readiness and apply selection to their own processes.
+Opening the original signed VS Code directly does not apply the Momota shim.
+
+If Windows G-Helper/Armoury Crate has put the GPU in Eco/iGPU-only mode, apply
+Standard/Hybrid in that running Windows utility and confirm NVIDIA visibility
+before returning to macOS. A driver-version mismatch requires a restart after
+the driver update. Neither condition is repaired by repeatedly relaunching Code.
+The experimental Darwin-only ACPI recovery remains uninstalled; there is no
+verified automatic firmware power or audio recovery task at login/shutdown.
+
+### Launchers
+
 Use the `.command` launchers rather than opening the copied app bundles directly.
+
+For original VS Code freezes, `Launch-Code-Software.command` starts the signed
+original app with `--disable-gpu` and its existing profile. Save work and quit
+original VS Code first; flags cannot replace the GPU configuration of an existing
+process. This bypasses accelerated drawing inside Code and reduces GPU features;
+AMD still drives the desktop. It is a workaround, not a driver repair.
+`./run-tool.sh tools/verify-code-software` verifies this mode in a separate,
+extension-free temporary profile, records software compositing/disabled Graphite,
+renderer heartbeats and a frame, then closes only that diagnostic instance.
+Reports remain local under `reports/code-software/`.
 
 - The browser uses `RTX Browser Test` under the user's Application Support folder.
   Its GPU button returns to the WebGL check.
@@ -67,6 +94,23 @@ Objective-C platform adapter.
 
 Small passing tests do not establish sustained performance or compatibility with
 every application.
+
+## NVIDIA-only verification
+
+Use `./verify-native.sh --nvidia-only` to check NVIDIA selection, observer
+enumeration, compute and rendered pixels without submitting an AMD fallback
+workload. `./verify-postboot.sh --nvidia-only` additionally checks both IOSurface
+usage modes and runs the sandboxed Ganesh browser resize/pixel loop for 60 seconds.
+This is useful while diagnosing the original VS Code AMD freezes. It still calls
+Metal device discovery, which may initialize both installed drivers.
+
+The default commands retain the complete AMD baseline/fallback cases. Passing
+the NVIDIA-only mode does not validate those cases, original Code, Safari or
+WindowServer routing. A successful post-boot run writes
+`reports/postboot/verification.json` with its scope and `amdFallbackTested` flag;
+the script removes an older success marker before starting a new run. Raw
+native/browser reports should be read with that scope. The Code RTX inspector
+waits up to 30 seconds for its own workbench endpoint during startup.
 
 ## Stress and crash checks
 
