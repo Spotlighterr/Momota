@@ -105,10 +105,89 @@ validated replacement for the Windows route.
 
 ## Experiment sequence
 
+### November 14: local PrimeBridge build and trial package
+
+The whole-desktop objective remains NVIDIA WindowServer rendering with AMD
+panel output. Rechecked PrimeBridge at commit
+`9edabe2dde67a81e0cb2aa378bd6fc5601914473`. Its upstream laptop results establish
+that this architecture exists; they do not establish GA401QC compatibility.
+
+Local preparation completed:
+
+- All four installed/loaded NVIDIA drivers match 2.6.6.
+- The internal display reports 1920x1080 at 144 Hz on AMD `1002:1638`.
+- PrimeBridge 0.7.1 compiled for x86_64 and passed ad hoc signature verification.
+  The compiler emitted deprecated-kernel-API and deployment-target warnings.
+- Patched NVRMFB and NVAccel compiled from NullMoth v2.6.6, commit
+  `470e391e8cf8d7e499cdabfa7f2daadb6e14bcfd`, for macOS 15. The EDID generator
+  selected 1920x1080 at 72 Hz. All 20 upstream EDID/patch checks and four upstream
+  settings-block checks passed. These are build/static checks.
+- Rebuilt unpatched binaries differ from the installed release binaries. The
+  upstream script accepts this compiler/SDK difference, but matching versions
+  and successful builds do not validate the rebuilt binaries at runtime.
+- Upstream `install.sh --dry-run` stops because NootedRed is loaded. This is an
+  ownership prerequisite, not evidence of a PrimeBridge rendering failure.
+
+`prepare-primebridge-trial.sh` stages a separate EFI and original kext copies
+under ignored `build/system-rendering/`. It only reads the supplied snapshot and
+installed kexts. It does not install anything, mount EFI, write NVRAM, rebuild
+the kernel collection or reboot. The first package is
+`build/system-rendering/trial-20261114-025940/`:
+
+- `EFI/`: candidate with NootedRed disabled, PrimeBridge added, Fix PAT disabled
+  and `nvfbforce=1 nvcursor=0 -nvrmnoflip` appended.
+- `payload/`: patched NVRMFB and NVAccel for later installation in macOS.
+- `original/`: original EFI configuration and installed driver copies.
+- `manifest.txt` and `config-changes.txt`: source identities, binary hashes and
+  the configuration changes for review.
+
+The source snapshot uses the read-back boot-UI configuration with SHA-256
+`24ae0097f72eab98e3f43fa54635d300892fbf6ca2ae697e2c916a43fa6248a9`.
+The candidate configuration hash is
+`8724a7108b580cfd5d9af6967037556a43e6947752aca10b9665654c21d37f42`.
+Plist syntax and the exact configuration diff were checked. Full OpenCore
+validation and current live-EFI comparison have not been performed.
+
+Build the pinned upstream artifacts from the Momota directory (the clone step
+is only needed when the checkout does not exist):
+
+```sh
+mkdir -p build/system-rendering
+git clone https://github.com/myvoow/PrimeBridge.git build/system-rendering/PrimeBridge
+git -C build/system-rendering/PrimeBridge checkout --detach 9edabe2dde67a81e0cb2aa378bd6fc5601914473
+sh build/system-rendering/PrimeBridge/PrimeBridge-source/build.sh
+env WORK="$PWD/build/system-rendering/nullmoth-2.6.6" \
+  PANEL=1920x1080 PANELHZ=144 MACOS_MAJOR=15 \
+  sh build/system-rendering/PrimeBridge/NVRMFB-patch/build-nvrmfb.sh 2.6.6 \
+  /Library/Extensions/NVRMFB.kext/Contents/MacOS/NVRMFB \
+  /Library/Extensions/NVAccel.kext/Contents/MacOS/NVAccel
+```
+
+Reproduce staging after building:
+
+```sh
+bash prepare-primebridge-trial.sh \
+  reports/boot-ui/20261114-024702/EFI-before \
+  reports/boot-ui/20261114-024702/config-prepared.plist
+```
+
+The package is not boot-ready: the patched payload still needs installation and
+an auxiliary kernel collection rebuild, which affect the OS even when using a
+USB EFI. Re-enabling NootedRed alone does not restore the original NVIDIA kexts.
+The snapshot also excludes IONDRVSupport, so do not assume the upstream basic
+display fallback is available unchanged. Before deployment, verify live EFI,
+NVIDIA-wired HDMI output and a usable recovery path; confirm a bootable original
+configuration and a driver-restoration procedure. Administrator access is
+required for the system installation; noninteractive sudo currently requires a
+password. No system installation or boot trial was performed in this pass.
+
+### Required boot trial
+
 The owner confirmed on November 14 that no external monitor is currently
 available. Direct NVIDIA output and PrimeBridge's external-desktop prerequisite
 therefore remain unverified. Do not proceed to the compositor/EFI trial based
 only on the successful per-app RTX checks.
+The owner later confirmed a USB stick is available, with no HDMI monitor yet.
 
 Later checks in the current boot passed NVIDIA compute, rendered pixels, both
 IOSurface usage modes and a 60-second Ganesh browser run; Code RTX pixel readback

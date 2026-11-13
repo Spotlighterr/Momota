@@ -18,6 +18,8 @@ Safari and desktop composition still use AMD. Long-term stability and heavy
 workloads have not been validated. See [test results](VERIFIED.md).
 The [system rendering investigation](docs/system-rendering.md) tracks newer
 upstream hybrid paths and the prerequisites for a full desktop trial.
+PrimeBridge trial artifacts have been built locally; whole-desktop boot testing
+is still pending.
 See [boot initialization](docs/boot-initialization.md) for experimental ASUS GPU
 recovery and the ALC285 audio investigation.
 
